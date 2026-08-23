@@ -1,0 +1,40 @@
+# EditorConfig — top-level settings for Project Simi.
+# Sub-projects inherit from here; their Prettier configs handle the
+# formatting pass (both backend and frontend use identical settings).
+#
+# https://editorconfig.org
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Markdown — two trailing spaces for a hard line break, but let
+# Prettier handle everything else.
+[*.md]
+trim_trailing_whitespace = false
+
+# YAML / Docker — keep 2-space indent (same as default).
+[*.{yml,yaml}]
+indent_size = 2
+
+# Dockerfile indent convention.
+[Dockerfile*]
+indent_size = 4
+
+# Shell scripts
+[*.sh]
+indent_size = 2
+
+# Makefiles require hard tabs.
+[Makefile]
+indent_style = tab
+
+# OS-generated files — leave alone.
+[*.{bat,cmd,ps1}]
+end_of_line = crlf

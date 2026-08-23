@@ -1,0 +1,39 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor / IDE
+.idea/
+*.swp
+*.swo
+*~
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Logs
+logs/
+*.log
+
+# Secrets / keys
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Docker compose dev override (auto-merged in dev, not for prod)
+docker-compose.override.yml
