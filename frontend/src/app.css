@@ -1,0 +1,180 @@
+/*
+ * App-level styles for PrimeReact + Schedule-X.
+ * PrimeReact's Arya-Orange theme handles all component styling.
+ */
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  color: var(--text-color-secondary, #a1a1aa);
+  font-size: 0.875rem;
+}
+.empty-state i {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
+}
+
+/* ── Sidebar link active/hover via PrimeReact tokens ─────────────────── */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--content-border-radius, 4px);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+.sidebar-link:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+.sidebar-link.active {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+}
+
+/* ── Field error text ─────────────────────────────────────────────────── */
+.field-error {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--red-500, #ef4444);
+}
+
+/* ── Schedule-X calendar theme overrides ──────────────────────────────── */
+.sx__calendar-wrapper,
+.sx__calendar {
+  --sx-color-primary: var(--primary-color, #f97316);
+  --sx-color-primary-text: var(--primary-contrast-color, #ffffff);
+  --sx-color-surface: var(--surface-card, #1e1e1e);
+  --sx-color-on-surface: var(--text-color, #e2e8f0);
+  --sx-color-border: var(--surface-border, rgba(255,255,255,0.12));
+  --sx-color-muted: var(--surface-ground, #1a1a1a);
+  --sx-color-on-muted: var(--text-color-secondary, #a1a1aa);
+  --sx-z-index-week-header: 1;
+  --sx-z-index-event-modal: 2;
+  --sx-calendar-header-popup-z-index: 3;
+  font-size: 0.875rem;
+  border-radius: var(--content-border-radius, 4px);
+  border: 1px solid var(--surface-border, rgba(255,255,255,0.12));
+}
+.sx__calendar .sx__time-grid-event {
+  border-radius: var(--content-border-radius, 4px);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+.sx__calendar .sx__header-day-name,
+.sx__calendar .sx__header-day-number {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-color-secondary, #a1a1aa);
+}
+.sx__calendar .sx__day-grid-day {
+  border-color: var(--surface-border, rgba(255,255,255,0.12));
+}
+.sx__calendar .sx__day-grid-day--outside {
+  background-color: color-mix(in srgb, var(--surface-ground, #1a1a1a) 30%, transparent);
+}
+.sx__calendar .sx__is-today .sx__header-day-number {
+  color: var(--primary-color, #f97316);
+  font-weight: 700;
+}
+
+/* ── Dialog transitions ────────────────────────────────────────────────── */
+
+/* Backdrop fade in/out */
+.p-dialog-mask {
+  transition: opacity 200ms ease-out;
+}
+
+/* Dialog panel: fade + slight scale + slide up */
+.p-dialog {
+  transition: opacity 200ms ease-out,
+              transform 200ms ease-out;
+}
+
+/* Entering state (PrimeReact adds .p-dialog-enter when opening) */
+.p-dialog-enter {
+  opacity: 0;
+  transform: scale(0.97) translateY(8px);
+}
+
+/* Visible state */
+.p-dialog-enter-active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Leaving state (PrimeReact adds these when closing) */
+.p-dialog-leave {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+.p-dialog-leave-active {
+  opacity: 0;
+  transform: scale(0.97) translateY(8px);
+}
+
+/* ── DataTable row-action button visibility ─────────────────────────── */
+
+/* Make the ellipsis action button always visible in table rows */
+.p-datatable .p-button.p-button-icon-only.p-button-text.p-button-rounded {
+  color: var(--text-color-secondary, #a1a1aa);
+  transition: color 150ms ease, background-color 150ms ease;
+}
+.p-datatable .p-button.p-button-icon-only.p-button-text.p-button-rounded:hover {
+  color: var(--text-color, #e2e8f0);
+  background-color: var(--surface-hover, rgba(255, 255, 255, 0.08));
+}
+
+/* ── Tab panel transitions ─────────────────────────────────────────────── */
+
+.p-tabview-panels {
+  position: relative;
+}
+
+.p-tabview-panel {
+  animation: tabFadeIn 200ms ease-out;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Client view two-column responsive ───────────────────────────────── */
+@media (max-width: 64rem) {
+  .client-two-col {
+    grid-template-columns: 1fr !important;
+  }
+}

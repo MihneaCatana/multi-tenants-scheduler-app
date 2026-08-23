@@ -1,0 +1,308 @@
+# Base stack for the Simi backend — used in BOTH dev and production.
+#
+# This file is production-shaped: the `app` service runs the slim `runner`
+# image (prod-only deps, compiled dist/, non-root user). For local development,
+# `docker-compose.override.yml` is auto-merged on top (only when you run
+# `docker compose up` with no `-f` flags) and swaps in the `dev` target with
+# source bind-mounts + tsx hot-reload.
+#
+# Two separate PostgreSQL 16 clusters for blast-radius containment (see §15):
+#   postgres-global  → simi_global  (auth, users, tenant registry)
+#   postgres-tenant  → tenant_*     (all per-tenant DBs, created from tenant_template)
+#
+# Compromise of one cluster's superuser cannot reach the other.
+# Each cluster has a 3-tier role model: app (DML), migrate (DDL), admin (superuser).
+# Per-tenant owner + app roles are created dynamically at provisioning time.
+#
+# SECURITY: Database credentials and HMAC master keys have NO defaults.
+# You MUST provide a .env file with all required values. Copy .env.example
+# and fill in every *_PASSWORD, *_MASTER_KEY, and COOKIE_SECRET value.
+#
+# Usage:
+#   docker compose up                          # dev: auto-loads override (hot-reload)
+#   docker compose -f docker-compose.yml up -d # prod: base only, runner image
+#   docker compose up postgres-global postgres-tenant  # just the DBs
+#   docker compose exec app pnpm db:migrate
+#   docker compose exec app pnpm seed
+#   docker compose logs backup-tenant --since 5m
+
+services:
+  # ── Global PostgreSQL cluster ────────────────────────────────────────
+  postgres-global:
+    image: postgres:16-bookworm
+    container_name: simi-postgres-global
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${GLOBAL_DB_ADMIN_USER:?GLOBAL_DB_ADMIN_USER is required}
+      POSTGRES_PASSWORD: ${GLOBAL_DB_ADMIN_PASSWORD:?GLOBAL_DB_ADMIN_PASSWORD is required}
+      POSTGRES_DB: ${GLOBAL_DB_NAME:-simi_global}
+      # App + migrate role credentials consumed by the init script to
+      # CREATE ROLE with the correct passwords.
+      GLOBAL_DB_USER: ${GLOBAL_DB_USER:-simi_global_app}
+      GLOBAL_DB_PASSWORD: ${GLOBAL_DB_PASSWORD:?GLOBAL_DB_PASSWORD is required}
+      GLOBAL_DB_MIGRATE_USER: ${GLOBAL_DB_MIGRATE_USER:-simi_global_migrate}
+      GLOBAL_DB_MIGRATE_PASSWORD: ${GLOBAL_DB_MIGRATE_PASSWORD:?GLOBAL_DB_MIGRATE_PASSWORD is required}
+    volumes:
+      - pgdata-global:/var/lib/postgresql/data
+      - ./docker/postgres-init-global.sh:/docker-entrypoint-initdb.d/10-init-global.sh:ro
+    # Tuned for the 1 GB container limit. shared_buffers at 25% of RAM, the
+    # rest left for OS page cache + connection work_mem. Cuts query latency
+    # 30-50% vs the 128 MB default by keeping hot data and indexes in RAM.
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c maintenance_work_mem=128MB
+      -c wal_buffers=8MB
+      -c max_connections=100
+      -c work_mem=4MB
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - simi
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+
+  # ── Tenant PostgreSQL cluster ────────────────────────────────────────
+  postgres-tenant:
+    image: postgres:16-bookworm
+    container_name: simi-postgres-tenant
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${TENANT_DB_ADMIN_USER:?TENANT_DB_ADMIN_USER is required}
+      POSTGRES_PASSWORD: ${TENANT_DB_ADMIN_PASSWORD:?TENANT_DB_ADMIN_PASSWORD is required}
+      POSTGRES_DB: ${TENANT_DB_TEMPLATE:-tenant_template}
+      # Migrate role credentials consumed by the init script.
+      TENANT_DB_MIGRATE_USER: ${TENANT_DB_MIGRATE_USER:-simi_tenant_migrate}
+      TENANT_DB_MIGRATE_PASSWORD: ${TENANT_DB_MIGRATE_PASSWORD:?TENANT_DB_MIGRATE_PASSWORD is required}
+      TENANT_DB_TEMPLATE: ${TENANT_DB_TEMPLATE:-tenant_template}
+    volumes:
+      - pgdata-tenant:/var/lib/postgresql/data
+      - ./docker/postgres-init-tenant.sh:/docker-entrypoint-initdb.d/10-init-tenant.sh:ro
+    # Tuned identically to postgres-global — same 1 GB limit, same workload
+    # profile (many small queries per tenant request).
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c maintenance_work_mem=128MB
+      -c wal_buffers=8MB
+      -c max_connections=100
+      -c work_mem=4MB
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - simi
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+
+  # ── Backup sidecar: global cluster ──────────────────────────────────
+  backup-global:
+    image: prodrigestivill/postgres-backup-local:16
+    container_name: simi-backup-global
+    restart: unless-stopped
+    depends_on:
+      postgres-global:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres-global
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${GLOBAL_DB_NAME:-simi_global}
+      POSTGRES_USER: ${GLOBAL_DB_ADMIN_USER:?GLOBAL_DB_ADMIN_USER is required}
+      POSTGRES_PASSWORD: ${GLOBAL_DB_ADMIN_PASSWORD:?GLOBAL_DB_ADMIN_PASSWORD is required}
+      POSTGRES_EXTRA_OPTS: "-Z6 --schema=public"
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: 30
+      BACKUP_KEEP_COUNT: 90
+      BACKUP_DIR: /backups
+      # Encrypt backups with GPG. BACKUP_ENCRYPT_PASSPHRASE must be set in .env.
+      BACKUP_ENCRYPT_PASSPHRASE: ${BACKUP_ENCRYPT_PASSPHRASE:?BACKUP_ENCRYPT_PASSPHRASE is required}
+    volumes:
+      - backups-global:/backups
+    networks:
+      - simi
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  # ── Backup sidecar: tenant cluster ──────────────────────────────────
+  backup-tenant:
+    image: prodrigestivill/postgres-backup-local:16
+    container_name: simi-backup-tenant
+    restart: unless-stopped
+    depends_on:
+      postgres-tenant:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres-tenant
+      POSTGRES_PORT: 5432
+      # pg_dumpall backs up ALL tenant databases in a single pass.
+      # POSTGRES_DB is still required by the image as the initial connection DB.
+      POSTGRES_DB: ${TENANT_DB_TEMPLATE:-tenant_template}
+      POSTGRES_CLUSTER: "true"
+      POSTGRES_USER: ${TENANT_DB_ADMIN_USER:?TENANT_DB_ADMIN_USER is required}
+      POSTGRES_PASSWORD: ${TENANT_DB_ADMIN_PASSWORD:?TENANT_DB_ADMIN_PASSWORD is required}
+      POSTGRES_EXTRA_OPTS: "-Z6"
+      # Every 6 hours — pg_dumpall on the full tenant cluster is heavier than
+      # the single-schema global dump, so we back off from @daily.
+      SCHEDULE: "@every 6h"
+      BACKUP_KEEP_DAYS: 30
+      BACKUP_KEEP_COUNT: 90
+      BACKUP_DIR: /backups
+      # Encrypt backups with GPG. BACKUP_ENCRYPT_PASSPHRASE must be set in .env.
+      BACKUP_ENCRYPT_PASSPHRASE: ${BACKUP_ENCRYPT_PASSPHRASE:?BACKUP_ENCRYPT_PASSPHRASE is required}
+    volumes:
+      - backups-tenant:/backups
+    networks:
+      - simi
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
+  # ── API app (production-shaped) ──────────────────────────────────────
+  # In dev, docker-compose.override.yml replaces `target` with `dev`,
+  # bind-mounts the source, and runs tsx watch for hot-reload.
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner       # prod image: prod-only deps + compiled dist/
+    image: simi-backend:latest
+    container_name: simi-app
+    restart: unless-stopped
+    depends_on:
+      postgres-global:
+        condition: service_healthy
+      postgres-tenant:
+        condition: service_healthy
+    environment:
+      # IMPORTANT: do NOT default to "development" — the Dockerfile runner target
+      # already sets ENV NODE_ENV=production, but docker-compose environment
+      # overrides Dockerfile ENV. Forgetting to set this in .env would silently
+      # run prod in dev mode (verbose errors, no hardening).
+      NODE_ENV: ${NODE_ENV:?NODE_ENV is required — set it in .env}
+      HOST: ${HOST:-0.0.0.0}
+      PORT: ${PORT:-3000}
+      # Cap the V8 heap to 384 MB so it stays well within the 512 MB container
+      # limit, leaving headroom for Buffer allocations and native addons (argon2).
+      NODE_OPTIONS: "--max-old-space-size=384"
+      BASE_DOMAIN: ${BASE_DOMAIN:-simisolutions.localhost}
+      APEX_IS_ADMIN_HOST: ${APEX_IS_ADMIN_HOST:-true}
+
+      # JWT / auth
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:-}
+      JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:-}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-30d}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+
+      # Global database — app runtime (DML role)
+      GLOBAL_DB_HOST: ${GLOBAL_DB_HOST:-postgres-global}
+      GLOBAL_DB_PORT: ${GLOBAL_DB_PORT:-5432}
+      GLOBAL_DB_USER: ${GLOBAL_DB_USER:-simi_global_app}
+      GLOBAL_DB_PASSWORD: ${GLOBAL_DB_PASSWORD:?GLOBAL_DB_PASSWORD is required}
+      GLOBAL_DB_NAME: ${GLOBAL_DB_NAME:-simi_global}
+      GLOBAL_DB_POOL_MAX: ${GLOBAL_DB_POOL_MAX:-10}
+      # Global database — migration (DDL role)
+      GLOBAL_DB_MIGRATE_USER: ${GLOBAL_DB_MIGRATE_USER:-simi_global_migrate}
+      GLOBAL_DB_MIGRATE_PASSWORD: ${GLOBAL_DB_MIGRATE_PASSWORD:?GLOBAL_DB_MIGRATE_PASSWORD is required}
+      # Global database — admin (superuser, used only for break-glass)
+      GLOBAL_DB_ADMIN_USER: ${GLOBAL_DB_ADMIN_USER:?GLOBAL_DB_ADMIN_USER is required}
+      GLOBAL_DB_ADMIN_PASSWORD: ${GLOBAL_DB_ADMIN_PASSWORD:?GLOBAL_DB_ADMIN_PASSWORD is required}
+
+      # Tenant database — per-tenant app roles (HMAC-derived, see tenant-creds.ts)
+      TENANT_DB_HOST: ${TENANT_DB_HOST:-postgres-tenant}
+      TENANT_DB_PORT: ${TENANT_DB_PORT:-5432}
+      TENANT_DB_NAME: ${TENANT_DB_NAME:-tenant_template}
+      TENANT_DB_TEMPLATE: ${TENANT_DB_TEMPLATE:-tenant_template}
+      TENANT_DB_POOL_MAX: ${TENANT_DB_POOL_MAX:-10}
+      # Tenant database — migration (DDL role)
+      TENANT_DB_MIGRATE_USER: ${TENANT_DB_MIGRATE_USER:-simi_tenant_migrate}
+      TENANT_DB_MIGRATE_PASSWORD: ${TENANT_DB_MIGRATE_PASSWORD:?TENANT_DB_MIGRATE_PASSWORD is required}
+      # Tenant database — admin (superuser, used only for CREATE DATABASE at provisioning)
+      TENANT_DB_ADMIN_USER: ${TENANT_DB_ADMIN_USER:?TENANT_DB_ADMIN_USER is required}
+      TENANT_DB_ADMIN_PASSWORD: ${TENANT_DB_ADMIN_PASSWORD:?TENANT_DB_ADMIN_PASSWORD is required}
+
+      # Per-tenant credential derivation keys (NO defaults — must be set in .env).
+      # See src/lib/tenant-creds.ts and CODEBASE.md §15.
+      TENANT_OWNER_MASTER_KEY: ${TENANT_OWNER_MASTER_KEY:?TENANT_OWNER_MASTER_KEY is required}
+      TENANT_APP_MASTER_KEY: ${TENANT_APP_MASTER_KEY:?TENANT_APP_MASTER_KEY is required}
+
+      # Cookie signing secret (NO default — must be set in .env).
+      COOKIE_SECRET: ${COOKIE_SECRET:?COOKIE_SECRET is required}
+
+      # TLS
+      DB_SSL: ${DB_SSL:-false}
+    ports:
+      - "127.0.0.1:${PORT:-3000}:${PORT:-3000}"
+    # No source mount, no command override: production runs the Dockerfile
+    # CMD (node dist/index.js) from the runner image. dev overrides live in
+    # docker-compose.override.yml.
+    networks:
+      - simi
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+  # ── Frontend (static nginx) ────────────────────────────────────────────
+  # Serves the pre-built React SPA. Build from the frontend/ directory first:
+  #   cd frontend && npm run build
+  # For local development the Vite dev server is used instead (not this service).
+  frontend:
+    image: nginx:1.27-alpine
+    container_name: simi-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8080}:80"
+    volumes:
+      - ../frontend/dist:/usr/share/nginx/html:ro
+      - ./docker/nginx-default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - simi
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 32M
+          cpus: '0.25'
+
+networks:
+  simi:
+    driver: bridge
+
+volumes:
+  pgdata-global:
+  pgdata-tenant:
+  backups-global:
+  backups-tenant:

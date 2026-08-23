@@ -1,0 +1,326 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: rgb(253, 251, 251);
+    --foreground: rgb(26, 20, 19);
+
+    --card: rgb(255, 255, 255);
+    --card-foreground: rgb(26, 20, 19);
+
+    --popover: rgb(255, 255, 255);
+    --popover-foreground: rgb(26, 20, 19);
+
+    --primary: rgb(252, 124, 93);
+    --primary-foreground: rgb(255, 255, 255);
+
+    --secondary: rgb(245, 236, 232);
+    --secondary-foreground: rgb(57, 42, 38);
+
+    --muted: rgb(240, 232, 228);
+    --muted-foreground: rgb(111, 95, 90);
+
+    --accent: rgb(245, 236, 232);
+    --accent-foreground: rgb(105, 72, 62);
+
+    --destructive: rgb(220, 38, 38);
+    --destructive-foreground: rgb(255, 255, 255);
+
+    --success: 161 74% 38%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 32 90% 46%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 227 42% 47%;
+    --info-foreground: 0 0% 100%;
+
+    --border: rgb(225, 215, 210);
+    --input: rgb(225, 215, 210);
+    --ring: rgb(252, 124, 93);
+
+    --radius: 0.625rem;
+
+    /* Sidebar */
+    --sidebar-background: rgb(253, 251, 251);
+    --sidebar-foreground: rgb(26, 20, 19);
+    --sidebar-primary: rgb(252, 124, 93);
+    --sidebar-primary-foreground: rgb(255, 255, 255);
+    --sidebar-accent: rgb(245, 236, 232);
+    --sidebar-accent-foreground: rgb(105, 72, 62);
+    --sidebar-border: rgb(225, 215, 210);
+    --sidebar-ring: rgb(252, 124, 93);
+
+    /* Spectrum-specific tokens kept for sidebar + layout use */
+    --spectrum-background-layer-1: 240 5% 98%;
+    --spectrum-background-layer-2: 240 6% 96%;
+    --spectrum-gray-100: 240 5% 92%;
+    --spectrum-gray-200: 220 6% 89%;
+    --spectrum-gray-300: 0 0% 78%;
+    --spectrum-gray-400: 0 0% 68%;
+    --spectrum-gray-500: 0 0% 57%;
+    --spectrum-gray-800: 215 28% 17%;
+    --spectrum-gray-900: 0 0% 10%;
+    --spectrum-positive-color: 161 74% 38%;
+    --spectrum-positive-bg: 141 48% 84%;
+    --spectrum-negative-color: 358 76% 59%;
+    --spectrum-negative-bg: 0 70% 90%;
+    --spectrum-notice-color: 32 90% 46%;
+    --spectrum-notice-bg: 40 95% 90%;
+    --spectrum-info-color: 227 42% 47%;
+    --spectrum-info-bg: 229 52% 93%;
+
+    --chart-1: rgb(252, 124, 93);
+    --chart-2: rgb(253, 173, 152);
+    --chart-3: rgb(252, 165, 125);
+    --chart-4: rgb(255, 210, 192);
+    --chart-5: rgb(26, 20, 19);
+    --sidebar: rgb(253, 251, 251);
+    --font-sans: Lexend Deca, sans-serif;
+    --font-serif: Georgia, serif;
+    --font-mono: JetBrains Mono, monospace;
+    --shadow-color: #60524e;
+    --shadow-opacity: 0.08;
+    --shadow-blur: 12px;
+    --shadow-spread: 0px;
+    --shadow-offset-x: 0px;
+    --shadow-offset-y: 2px;
+    --letter-spacing: 0em;
+    --spacing: 0.25rem;
+    --shadow-2xs: 0px 2px 12px 0px hsl(13.3333 10.3448% 34.1176% / 0.04);
+    --shadow-xs: 0px 2px 12px 0px hsl(13.3333 10.3448% 34.1176% / 0.04);
+    --shadow-sm: 0px 2px 12px 0px hsl(13.3333 10.3448% 34.1176% / 0.08), 0px 1px 2px -1px hsl(13.3333 10.3448% 34.1176% / 0.08);
+    --shadow: 0px 2px 12px 0px hsl(13.3333 10.3448% 34.1176% / 0.08), 0px 1px 2px -1px hsl(13.3333 10.3448% 34.1176% / 0.08);
+    --shadow-md: 0px 2px 12px 0px hsl(13.3333 10.3448% 34.1176% / 0.08), 0px 2px 4px -1px hsl(13.3333 10.3448% 34.1176% / 0.08);
+    --shadow-lg: 0px 2px 12px 0px hsl(13.3333 10.3448% 34.1176% / 0.08), 0px 4px 6px -1px hsl(13.3333 10.3448% 34.1176% / 0.08);
+    --shadow-xl: 0px 2px 12px 0px hsl(13.3333 10.3448% 34.1176% / 0.08), 0px 8px 10px -1px hsl(13.3333 10.3448% 34.1176% / 0.08);
+    --shadow-2xl: 0px 2px 12px 0px hsl(13.3333 10.3448% 34.1176% / 0.20);
+    --tracking-normal: 0em;
+  }
+
+  .dark {
+    --background: rgb(16, 12, 12);
+    --foreground: rgb(234, 226, 224);
+
+    --card: rgb(26, 20, 19);
+    --card-foreground: rgb(234, 226, 224);
+
+    --popover: rgb(26, 20, 19);
+    --popover-foreground: rgb(234, 226, 224);
+
+    --primary: rgb(253, 173, 152);
+    --primary-foreground: rgb(26, 20, 19);
+
+    --secondary: rgb(46, 38, 35);
+    --secondary-foreground: rgb(210, 198, 194);
+
+    --muted: rgb(39, 32, 29);
+    --muted-foreground: rgb(158, 144, 138);
+
+    --accent: rgb(46, 38, 35);
+    --accent-foreground: rgb(210, 198, 194);
+
+    --destructive: rgb(239, 68, 68);
+    --destructive-foreground: rgb(255, 255, 255);
+
+    --success: 163 48% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 32 76% 49%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 226 30% 52%;
+    --info-foreground: 0 0% 100%;
+
+    --border: rgb(60, 52, 48);
+    --input: rgb(60, 52, 48);
+    --ring: rgb(253, 173, 152);
+
+    --radius: 0.625rem;
+
+    --sidebar-background: rgb(16, 12, 12);
+    --sidebar-foreground: rgb(234, 226, 224);
+    --sidebar-primary: rgb(253, 173, 152);
+    --sidebar-primary-foreground: rgb(26, 20, 19);
+    --sidebar-accent: rgb(46, 38, 35);
+    --sidebar-accent-foreground: rgb(210, 198, 194);
+    --sidebar-border: rgb(60, 52, 48);
+    --sidebar-ring: rgb(253, 173, 152);
+
+    /* Spectrum dark overrides */
+    --spectrum-background-layer-1: 0 0% 10%;
+    --spectrum-background-layer-2: 0 0% 21%;
+    --spectrum-gray-100: 0 0% 20%;
+    --spectrum-gray-200: 0 0% 27%;
+    --spectrum-gray-300: 0 0% 36%;
+    --spectrum-gray-400: 0 0% 46%;
+    --spectrum-gray-500: 0 0% 58%;
+    --spectrum-gray-800: 0 0% 92%;
+    --spectrum-gray-900: 0 0% 100%;
+    --spectrum-positive-color: 163 48% 42%;
+    --spectrum-positive-bg: 163 80% 13%;
+    --spectrum-negative-color: 0 72% 59%;
+    --spectrum-negative-bg: 0 52% 20%;
+    --spectrum-notice-color: 32 76% 49%;
+    --spectrum-notice-bg: 30 85% 18%;
+    --spectrum-info-color: 226 30% 52%;
+    --spectrum-info-bg: 228 52% 20%;
+
+    --chart-1: rgb(253, 173, 152);
+    --chart-2: rgb(252, 124, 93);
+    --chart-3: rgb(248, 150, 130);
+    --chart-4: rgb(26, 20, 19);
+    --chart-5: rgb(234, 226, 224);
+    --radius: 0.625rem;
+    --sidebar: rgb(22, 17, 16);
+    --font-sans: Segoe UI, Helvetica Neue, Helvetica, Lucida Grande, Arial, Ubuntu, Cantarell, Fira Sans, sans-serif;
+    --font-serif: Georgia, serif;
+    --font-mono: SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+    --shadow-color: #000000;
+    --shadow-opacity: 0.35;
+    --shadow-blur: 16px;
+    --shadow-spread: 0px;
+    --shadow-offset-x: 0px;
+    --shadow-offset-y: 4px;
+    --letter-spacing: 0em;
+    --spacing: 0.25rem;
+    --shadow-2xs: 0px 4px 16px 0px hsl(0 0% 0% / 0.17);
+    --shadow-xs: 0px 4px 16px 0px hsl(0 0% 0% / 0.17);
+    --shadow-sm: 0px 4px 16px 0px hsl(0 0% 0% / 0.35), 0px 1px 2px -1px hsl(0 0% 0% / 0.35);
+    --shadow: 0px 4px 16px 0px hsl(0 0% 0% / 0.35), 0px 1px 2px -1px hsl(0 0% 0% / 0.35);
+    --shadow-md: 0px 4px 16px 0px hsl(0 0% 0% / 0.35), 0px 2px 4px -1px hsl(0 0% 0% / 0.35);
+    --shadow-lg: 0px 4px 16px 0px hsl(0 0% 0% / 0.35), 0px 4px 6px -1px hsl(0 0% 0% / 0.35);
+    --shadow-xl: 0px 4px 16px 0px hsl(0 0% 0% / 0.35), 0px 8px 10px -1px hsl(0 0% 0% / 0.35);
+    --shadow-2xl: 0px 4px 16px 0px hsl(0 0% 0% / 0.88);
+  }
+
+  body {
+    letter-spacing: var(--tracking-normal);
+  }
+}
+
+/*
+ * ============================================================================
+ * BASE LAYER — body defaults, heading styles, focus rings
+ * ============================================================================
+ */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply antialiased bg-background text-foreground;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    font-feature-settings: 'liga' 1, 'kern' 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold text-foreground;
+    line-height: 1.3;
+  }
+}
+
+/*
+ * ============================================================================
+ * TABLE STYLES — Spectrum-inspired table used across the app
+ * ============================================================================
+ */
+
+@layer components {
+  .table-spectrum {
+    @apply min-w-full divide-y text-sm;
+  }
+  .table-spectrum thead {
+    @apply bg-muted;
+  }
+  .table-spectrum thead th {
+    @apply px-4 py-2.5 text-left font-semibold uppercase tracking-wider text-muted-foreground;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+  }
+  .table-spectrum tbody {
+    @apply divide-y;
+  }
+  .table-spectrum tbody tr {
+    @apply transition-colors duration-75;
+  }
+  .table-spectrum tbody tr:hover {
+    background-color: color-mix(in srgb, var(--muted) 50%, transparent);
+  }
+  .table-spectrum td {
+    @apply px-4 py-3 text-foreground;
+  }
+}
+
+/*
+ * ============================================================================
+ * SCHEDULE-X THEME OVERRIDES
+ *
+ * Customise the @schedule-x/calendar theme to match the warm coral design tokens.
+ * Applied after the default theme CSS is imported in CalendarTab.tsx.
+ * ============================================================================
+ */
+
+.sx__calendar-wrapper,
+.sx__calendar {
+  --sx-color-primary: var(--primary);
+  --sx-color-primary-text: var(--primary-foreground);
+  --sx-color-surface: var(--card);
+  --sx-color-on-surface: var(--card-foreground);
+  --sx-color-border: var(--border);
+  --sx-color-muted: var(--muted);
+  --sx-color-on-muted: var(--muted-foreground);
+  --sx-z-index-week-header: 1;
+  --sx-z-index-event-modal: 2;
+  --sx-calendar-header-popup-z-index: 3;
+  font-size: 0.875rem;
+  border-radius: 0.625rem;
+  border: 1px solid var(--border);
+}
+
+.sx__calendar .sx__time-grid-event {
+  border-radius: 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.sx__calendar .sx__header-day-name,
+.sx__calendar .sx__header-day-number {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+
+.sx__calendar .sx__day-grid-day {
+  border-color: var(--border);
+}
+
+.sx__calendar .sx__day-grid-day--outside {
+  background-color: color-mix(in srgb, var(--muted) 30%, transparent);
+}
+
+.sx__calendar .sx__is-today .sx__header-day-number {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* Dark mode adjustments */
+.dark .sx__calendar-wrapper,
+.dark .sx__calendar {
+  --sx-color-surface: var(--card);
+  --sx-color-on-surface: var(--card-foreground);
+  --sx-color-border: var(--border);
+  --sx-color-muted: var(--muted);
+  --sx-color-on-muted: var(--muted-foreground);
+}
+
+.dark .sx__calendar .sx__time-grid-line {
+  border-color: color-mix(in srgb, var(--border) 50%, transparent);
+}
